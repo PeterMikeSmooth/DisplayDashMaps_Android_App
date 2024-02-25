@@ -82,76 +82,75 @@ public class NotificationService extends NotificationListenerService {
 
         String[] informationMessage = new String[7];
 
+        String[] strings;
 
         String string = bundle.getString(Notification.EXTRA_TEXT);
-        String[] strings = string.split("-");//destination
-        informationMessage[0] = strings[0].trim();
-        strings = strings[1].trim().split(" ");
-        if (strings.length == 3) {
-            strings[0] = strings[0] + " ";//concat a " "
-            strings[0] = strings[0] + strings[1];//if use 12 hour type, then concat the time and AM/PM
+        if (string != null) {
+            strings = string.split("-");//destination
+            informationMessage[0] = strings[0].trim();
+            strings = strings[1].trim().split(" ");
+            if (strings.length == 3) {
+                strings[0] = strings[0] + " ";//concat a " "
+                strings[0] = strings[0] + strings[1];//if use 12 hour type, then concat the time and AM/PM
+            }
+            informationMessage[1] = strings[0];// get the ETA
         }
-        informationMessage[1] = strings[0];// get the ETA
 
         string = bundle.getString(Notification.EXTRA_TITLE);
-        strings = string.split("-");
-        if (strings.length == 2) {
-            informationMessage[2] = strings[1].trim();//Distance to next direction
-            informationMessage[3] = strings[0].trim();//Direction to somewhere
-        } else if (strings.length == 1) {
-            informationMessage[2] = strings[0].trim();//Direction to somewhere
-            informationMessage[3] = "N/A";//Distance to next direction
+        if (string != null) {
+            strings = string.split("-");
+            if (strings.length == 2) {
+                informationMessage[2] = strings[1].trim();//Distance to next direction
+                informationMessage[3] = strings[0].trim();//Direction to somewhere
+            } else if (strings.length == 1) {
+                informationMessage[2] = strings[0].trim();//Direction to somewhere
+                informationMessage[3] = "N/A";//Distance to next direction
+            }
         }
 
         string = bundle.getString(Notification.EXTRA_SUB_TEXT);
-        strings = string.split("·");
-        informationMessage[4] = strings[0].trim();//ETA in Minutes
-        informationMessage[5] = strings[1].trim();//Distance
+        if (string != null) {
+            strings = string.split("·");
+            informationMessage[4] = strings[0].trim();//ETA in Minutes
+            informationMessage[5] = strings[1].trim();//Distance
+        }
+
         BitmapDrawable bitmapDrawable = (BitmapDrawable) sbn.getNotification().getLargeIcon().loadDrawable(getApplicationContext());
 
         informationMessage[6] = String.valueOf(DirectionUtils.getDirectionNumber(DirectionUtils.getDirectionByComparing(bitmapDrawable.getBitmap())));
 
         if (deviceStatus) {
-            if (!informationMessage[0].equals(informationMessageSentLastTime[0])) {//destination
-                controlBle.sendDestination(informationMessage[0]);
+            if (informationMessage[0] != null && !informationMessage[0].equals(informationMessageSentLastTime[0])) {
+
+                    controlBle.sendDestination(informationMessage[0]);
                 informationMessageSentLastTime[0] = informationMessage[0];
             }
-            if (!Objects.equals(informationMessage[1], informationMessageSentLastTime[1])) {//ETA
+            if (informationMessage[1] != null && !Objects.equals(informationMessage[1], informationMessageSentLastTime[1])) {//ETA
                 controlBle.sendEta(informationMessage[1]);
                 informationMessageSentLastTime[1] = informationMessage[1];
             }
-            if (!Objects.equals(informationMessage[2], informationMessageSentLastTime[2])) {//direction
-
+            if (informationMessage[2] != null && !Objects.equals(informationMessage[2], informationMessageSentLastTime[2])) {//direction
                 if (informationMessage[2].length() > 20) {
                     controlBle.sendDirection(informationMessage[2].substring(0, 20) + "..");
                 } else {
                     controlBle.sendDirection(informationMessage[2]);
                 }
-
                 informationMessageSentLastTime[2] = informationMessage[2];
             }
-            if (!Objects.equals(informationMessage[3], informationMessageSentLastTime[3])) {
-
+            if (informationMessage[3] != null && !Objects.equals(informationMessage[3], informationMessageSentLastTime[3])) {
                 controlBle.sendDirectionDistances(informationMessage[3]);
-
                 informationMessageSentLastTime[3] = informationMessage[3];
             }
-            if (!Objects.equals(informationMessage[4], informationMessageSentLastTime[4])) {
-
+            if (informationMessage[4] != null && !Objects.equals(informationMessage[4], informationMessageSentLastTime[4])) {
                 controlBle.sendEtaInMinutes(informationMessage[4]);
-
                 informationMessageSentLastTime[4] = informationMessage[4];
             }
-            if (!Objects.equals(informationMessage[5], informationMessageSentLastTime[5])) {
-
+            if (informationMessage[5] != null && !Objects.equals(informationMessage[5], informationMessageSentLastTime[5])) {
                 controlBle.sendDistance(informationMessage[5]);
-
                 informationMessageSentLastTime[5] = informationMessage[5];
             }
-            if (!Objects.equals(informationMessage[6], informationMessageSentLastTime[6])) {
-
+            if (informationMessage[6] != null && !Objects.equals(informationMessage[6], informationMessageSentLastTime[6])) {
                 controlBle.sendDirectionPrecise(informationMessage[6]);
-
                 informationMessageSentLastTime[6] = informationMessage[6];
             }
             Log.d("d", "done");

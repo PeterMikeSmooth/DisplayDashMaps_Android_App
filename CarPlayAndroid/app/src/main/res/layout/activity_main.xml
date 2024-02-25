@@ -14,7 +14,8 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:background="@color/green"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:outlineAmbientShadowColor="#E91E63">
 
     </LinearLayout>
 
@@ -36,7 +37,7 @@
                 android:layout_height="match_parent"
                 android:layout_marginLeft="10dp"
                 android:text="BluetoothStatus"
-                android:textColor="@color/black"
+                android:textColor="@color/teal_700"
                 android:textSize="20sp" />
 
             <ImageView
@@ -59,7 +60,7 @@
                 android:layout_height="match_parent"
                 android:layout_marginLeft="10dp"
                 android:text="BleServiceStatus"
-                android:textColor="@color/black"
+                android:textColor="@color/teal_700"
                 android:textSize="20sp" />
 
             <ImageView
@@ -83,7 +84,7 @@
                 android:layout_height="match_parent"
                 android:layout_marginLeft="10dp"
                 android:text="NotificationStatus"
-                android:textColor="@color/black"
+                android:textColor="@color/teal_700"
                 android:textSize="20sp" />
 
             <ImageView
@@ -106,7 +107,7 @@
                 android:layout_height="match_parent"
                 android:layout_marginLeft="10dp"
                 android:text="DeviceStatus"
-                android:textColor="@color/black"
+                android:textColor="@color/teal_700"
                 android:textSize="20sp" />
 
             <ImageView
@@ -124,7 +125,7 @@
             android:layout_marginLeft="10dp"
             android:layout_marginTop="10dp"
             android:text="Last Time Connected"
-            android:textColor="#000000"
+            android:textColor="@color/teal_700"
             android:textSize="20sp" />
 
         <TextView
@@ -133,7 +134,7 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="10dp"
             android:text="No Device Connected"
-            android:textColor="#000000"
+            android:textColor="@color/teal_700"
             android:textSize="20sp" />
     </LinearLayout>
 
@@ -155,7 +156,7 @@
             android:background="@drawable/button"
             android:text="Open Notification Access"
             android:textColor="@color/white"
-            android:textSize="10sp" />
+            android:textSize="8sp" />
 
         <Button
             android:id="@+id/buttonConnectOld"
