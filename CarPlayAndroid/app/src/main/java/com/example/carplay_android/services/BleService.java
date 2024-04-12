@@ -169,7 +169,7 @@ public class BleService extends Service {
 
                         @Override
                         public void onWriteFailure(BleException exception) {
-                            Log.d("1", "Failed to send");
+                            //Log.d("1", "Failed to send: " + exception.toString());
                             new Handler().postDelayed(new Runnable() {
                                 @Override
                                 public void run() {

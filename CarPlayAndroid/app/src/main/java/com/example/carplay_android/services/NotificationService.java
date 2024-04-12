@@ -1,4 +1,7 @@
 package com.example.carplay_android.services;
+import android.text.SpannableString;
+import android.graphics.drawable.Icon;
+
 
 import static com.example.carplay_android.javabeans.JavaBeanFilters.*;
 
@@ -80,44 +83,88 @@ public class NotificationService extends NotificationListenerService {
     private void handleGMapNotification(StatusBarNotification sbn) {
         Bundle bundle = sbn.getNotification().extras;
 
+        for (String key : bundle.keySet()) {
+            Log.d("1", key + " : " + bundle.get(key));
+        }
+
         String[] informationMessage = new String[7];
 
         String[] strings;
 
-        String string = bundle.getString(Notification.EXTRA_TEXT);
+        String string = null;
+
+        Object value = bundle.get(Notification.EXTRA_TEXT);
+
+        if (value instanceof SpannableString) {
+            SpannableString spannableString = (SpannableString) value;
+            string = spannableString.toString();
+        } else if (value instanceof String) {
+            string = (String) value;
+        }
         if (string != null) {
-            strings = string.split("-");//destination
+            strings = string.split("-"); //destination
             informationMessage[0] = strings[0].trim();
-            strings = strings[1].trim().split(" ");
-            if (strings.length == 3) {
-                strings[0] = strings[0] + " ";//concat a " "
-                strings[0] = strings[0] + strings[1];//if use 12 hour type, then concat the time and AM/PM
-            }
-            informationMessage[1] = strings[0];// get the ETA
+        } else {
+            Log.d("1", "EXTRA_TEXT = null");
         }
 
-        string = bundle.getString(Notification.EXTRA_TITLE);
+        value = bundle.get(Notification.EXTRA_TITLE);
+
+        if (value instanceof SpannableString) {
+            SpannableString spannableString = (SpannableString) value;
+            string = spannableString.toString();
+        } else if (value instanceof String) {
+            string = (String) value;
+        }
+
         if (string != null) {
             strings = string.split("-");
             if (strings.length == 2) {
-                informationMessage[2] = strings[1].trim();//Distance to next direction
-                informationMessage[3] = strings[0].trim();//Direction to somewhere
+                informationMessage[2] = strings[0].trim();// Direction to somewhere
+                informationMessage[3] = strings[1].trim();// Distance to next direction
+                Log.d("1", "EXTRA_TITLE Distance to next direction = " + informationMessage[2]);
+                Log.d("1", "EXTRA_TITLE Direction to somewhere = " + informationMessage[3]);
             } else if (strings.length == 1) {
-                informationMessage[2] = strings[0].trim();//Direction to somewhere
-                informationMessage[3] = "N/A";//Distance to next direction
+                informationMessage[2] = "N/A";//Distance to next direction
+                informationMessage[3] = strings[0].trim();//Direction to somewhere
+                Log.d("1", "EXTRA_TITLE Distance to next direction = " + informationMessage[2]);
+                Log.d("1", "EXTRA_TITLE Direction to somewhere NA = " + informationMessage[3]);
             }
+        }
+        else {
+            Log.d("1", "EXTRA_TITLE = null");
         }
 
         string = bundle.getString(Notification.EXTRA_SUB_TEXT);
         if (string != null) {
             strings = string.split("·");
-            informationMessage[4] = strings[0].trim();//ETA in Minutes
-            informationMessage[5] = strings[1].trim();//Distance
+            if (strings.length >= 3) {
+                informationMessage[4] = strings[0].trim();//Minutes remaining
+                informationMessage[5] = strings[1].trim();//Distance
+                informationMessage[1] = strings[2].trim().replace(" ETA", ""); //ETA
+                Log.d("1", "EXTRA_SUB_TEXT ETA in Minutes = " + informationMessage[4]);
+                Log.d("1", "EXTRA_SUB_TEXT Distance = " + informationMessage[5]);
+                Log.d("1", "EXTRA_SUB_TEXT ETA = " + informationMessage[1]);
+            } else {
+                Log.d("1", "EXTRA_SUB_TEXT Split result does not contain enough elements");
+            }
+        } else {
+            Log.d("1", "EXTRA_SUB_TEXT = null");
         }
 
-        BitmapDrawable bitmapDrawable = (BitmapDrawable) sbn.getNotification().getLargeIcon().loadDrawable(getApplicationContext());
+        Icon largeIcon = sbn.getNotification().getLargeIcon();
 
-        informationMessage[6] = String.valueOf(DirectionUtils.getDirectionNumber(DirectionUtils.getDirectionByComparing(bitmapDrawable.getBitmap())));
+        if (largeIcon != null) {
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) largeIcon.loadDrawable(getApplicationContext());
+            if (bitmapDrawable != null) {
+                informationMessage[6] = String.valueOf(DirectionUtils.getDirectionNumber(DirectionUtils.getDirectionByComparing(bitmapDrawable.getBitmap())));
+                Log.d("1", "Valeur de informationMessage[6] : " + informationMessage[6]);
+            } else {
+                Log.d("1", "BitmapDrawable is null");
+            }
+        } else {
+            Log.d("1", "LargeIcon is null");
+        }
 
         if (deviceStatus) {
             if (informationMessage[0] != null && !informationMessage[0].equals(informationMessageSentLastTime[0])) {
@@ -154,6 +201,7 @@ public class NotificationService extends NotificationListenerService {
                 informationMessageSentLastTime[6] = informationMessage[6];
             }
             Log.d("d", "done");
+            Log.d("d", " ");
             informationMessageSentLastTime = informationMessage;
             ifSendNotification = false;//reduce the frequency of sending messages
             //why not just check if two messages are the same,  why still need to send same message every half second:
