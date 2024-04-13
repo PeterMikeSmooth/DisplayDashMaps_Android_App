@@ -4,8 +4,6 @@ import static com.example.carplay_android.javabeans.JavaBeanFilters.*;
 
 import android.app.Service;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattService;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Handler;
@@ -18,16 +16,13 @@ import androidx.annotation.Nullable;
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
 import com.clj.fastble.callback.BleMtuChangedCallback;
-import com.clj.fastble.callback.BleReadCallback;
 import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.example.carplay_android.utils.BroadcastUtils;
 
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.UUID;
 
 
 public class BleService extends Service {
@@ -122,7 +117,7 @@ public class BleService extends Service {
             });
         }
 
-        public void sendDestination(String information){
+        public void sendNextStreet(String information){
             String DESTINATION_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
             sendToDevice(information, DESTINATION_UUID);
         }
@@ -146,7 +141,7 @@ public class BleService extends Service {
             String ETA_DISTANCE_UUID = "8bf31540-eb0d-476c-b233-f514678d2afb";
             sendToDevice(information, ETA_DISTANCE_UUID);
         }
-        public void sendDirectionPrecise(String information){
+        public void sendArrow(String information){
             String DIRECTION_PRECISE_UUID = "a602346d-c2bb-4782-8ea7-196a11f85113";
             sendToDevice(information, DIRECTION_PRECISE_UUID);
         }

@@ -14,7 +14,6 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -22,7 +21,6 @@ import android.util.Log;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.clj.fastble.BleManager;
 import com.example.carplay_android.utils.BroadcastUtils;
 import com.example.carplay_android.utils.DirectionUtils;
 
@@ -125,7 +123,7 @@ public class NotificationService extends NotificationListenerService {
                 Log.d("1", "EXTRA_TITLE Distance to next direction = " + informationMessage[2]);
                 Log.d("1", "EXTRA_TITLE Direction to somewhere = " + informationMessage[3]);
             } else if (strings.length == 1) {
-                informationMessage[2] = "N/A";//Distance to next direction
+                informationMessage[2] = "Useless ?";//Distance to next direction
                 informationMessage[3] = strings[0].trim();//Direction to somewhere
                 Log.d("1", "EXTRA_TITLE Distance to next direction = " + informationMessage[2]);
                 Log.d("1", "EXTRA_TITLE Direction to somewhere NA = " + informationMessage[3]);
@@ -169,7 +167,7 @@ public class NotificationService extends NotificationListenerService {
         if (deviceStatus) {
             if (informationMessage[0] != null && !informationMessage[0].equals(informationMessageSentLastTime[0])) {
 
-                    controlBle.sendDestination(informationMessage[0]);
+                    controlBle.sendNextStreet(informationMessage[0]);
                 informationMessageSentLastTime[0] = informationMessage[0];
             }
             if (informationMessage[1] != null && !Objects.equals(informationMessage[1], informationMessageSentLastTime[1])) {//ETA
@@ -197,7 +195,7 @@ public class NotificationService extends NotificationListenerService {
                 informationMessageSentLastTime[5] = informationMessage[5];
             }
             if (informationMessage[6] != null && !Objects.equals(informationMessage[6], informationMessageSentLastTime[6])) {
-                controlBle.sendDirectionPrecise(informationMessage[6]);
+                controlBle.sendArrow(informationMessage[6]);
                 informationMessageSentLastTime[6] = informationMessage[6];
             }
             Log.d("d", "done");
