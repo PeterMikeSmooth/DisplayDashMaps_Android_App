@@ -24,10 +24,13 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.example.carplay_android.utils.BroadcastUtils;
 import com.example.carplay_android.utils.DirectionUtils;
 
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class NotificationService extends NotificationListenerService {
@@ -77,6 +80,11 @@ public class NotificationService extends NotificationListenerService {
         return (sbn.getId() == 1);
     }
 
+    private String removeAccentsAndSpecialCharacters(String input) {
+        return Normalizer.normalize(input, Normalizer.Form.NFD)
+                .replaceAll("[^\\p{ASCII}]", "")
+                .replaceAll("[^a-zA-Z0-9 .'\\-]", "");
+    }
 
     private void handleGMapNotification(StatusBarNotification sbn) {
         Bundle bundle = sbn.getNotification().extras;
@@ -102,6 +110,9 @@ public class NotificationService extends NotificationListenerService {
         if (string != null) {
             strings = string.split("-"); //destination
             informationMessage[0] = strings[0].trim();
+            Log.d("1", "[0] Next street 1 = " + informationMessage[0]);
+            informationMessage[0] = removeAccentsAndSpecialCharacters(informationMessage[0]);
+            Log.d("1", "[0] Next street 2 = " + informationMessage[0]);
         } else {
             Log.d("1", "EXTRA_TEXT = null");
         }
@@ -119,14 +130,14 @@ public class NotificationService extends NotificationListenerService {
             strings = string.split("-");
             if (strings.length == 2) {
                 informationMessage[2] = strings[0].trim();// Direction to somewhere
-                informationMessage[3] = strings[1].trim();// Distance to next direction
-                Log.d("1", "EXTRA_TITLE Distance to next direction = " + informationMessage[2]);
-                Log.d("1", "EXTRA_TITLE Direction to somewhere = " + informationMessage[3]);
+                informationMessage[3] = strings[1].trim().replace("\u00A0", " ");;// Distance to next direction
+                Log.d("1", "[2] A - EXTRA_TITLE Useless = " + informationMessage[2]);
+                Log.d("1", "[3] A - EXTRA_TITLE Direction to next dir = " + informationMessage[3]);
             } else if (strings.length == 1) {
                 informationMessage[2] = "Useless ?";//Distance to next direction
-                informationMessage[3] = strings[0].trim();//Direction to somewhere
-                Log.d("1", "EXTRA_TITLE Distance to next direction = " + informationMessage[2]);
-                Log.d("1", "EXTRA_TITLE Direction to somewhere NA = " + informationMessage[3]);
+                informationMessage[3] = strings[0].trim().replace("\u00A0", " ");;//Direction to somewhere
+                Log.d("1", "[2] B - EXTRA_TITLE Useless = " + informationMessage[2]);
+                Log.d("1", "[3] B - EXTRA_TITLE Direction to next dir = " + informationMessage[3]);
             }
         }
         else {
@@ -137,14 +148,24 @@ public class NotificationService extends NotificationListenerService {
         if (string != null) {
             strings = string.split("·");
             if (strings.length >= 3) {
-                informationMessage[4] = strings[0].trim();//Minutes remaining
-                informationMessage[5] = strings[1].trim();//Distance
-                informationMessage[1] = strings[2].trim().replace(" ETA", ""); //ETA
-                Log.d("1", "EXTRA_SUB_TEXT ETA in Minutes = " + informationMessage[4]);
-                Log.d("1", "EXTRA_SUB_TEXT Distance = " + informationMessage[5]);
-                Log.d("1", "EXTRA_SUB_TEXT ETA = " + informationMessage[1]);
+                informationMessage[4] = strings[0].trim().replace("\u00A0", " ");; // Minutes restantes
+                informationMessage[5] = strings[1].trim().replace("\u00A0", " ");; // Distance
+
+                // Utilisation d'une expression régulière pour extraire l'heure au format "88:88"
+                Pattern pattern = Pattern.compile("\\b(\\d{1,2}:\\d{2})\\b");
+                Matcher matcher = pattern.matcher(strings[2]);
+                if (matcher.find()) {
+                    informationMessage[1] = matcher.group(1); // L'heure extraite
+                } else {
+                    // Si l'heure au format "88:88" n'est pas trouvée, une valeur par défaut peut être attribuée
+                    informationMessage[1] = "00:00";
+                }
+
+                Log.d("1", "[4] EXTRA_SUB_TEXT ETA en minutes = " + informationMessage[4]);
+                Log.d("1", "[5] EXTRA_SUB_TEXT Distance = " + informationMessage[5]);
+                Log.d("1", "[1] EXTRA_SUB_TEXT ETA = " + informationMessage[1]);
             } else {
-                Log.d("1", "EXTRA_SUB_TEXT Split result does not contain enough elements");
+                Log.d("1", "EXTRA_SUB_TEXT Le résultat de la division ne contient pas assez d'éléments");
             }
         } else {
             Log.d("1", "EXTRA_SUB_TEXT = null");
@@ -156,7 +177,7 @@ public class NotificationService extends NotificationListenerService {
             BitmapDrawable bitmapDrawable = (BitmapDrawable) largeIcon.loadDrawable(getApplicationContext());
             if (bitmapDrawable != null) {
                 informationMessage[6] = String.valueOf(DirectionUtils.getDirectionNumber(DirectionUtils.getDirectionByComparing(bitmapDrawable.getBitmap())));
-                Log.d("1", "Valeur de informationMessage[6] : " + informationMessage[6]);
+                Log.d("1", "[6] Direction Arrow : " + informationMessage[6]);
             } else {
                 Log.d("1", "BitmapDrawable is null");
             }
@@ -174,16 +195,16 @@ public class NotificationService extends NotificationListenerService {
                 controlBle.sendEta(informationMessage[1]);
                 informationMessageSentLastTime[1] = informationMessage[1];
             }
-            if (informationMessage[2] != null && !Objects.equals(informationMessage[2], informationMessageSentLastTime[2])) {//direction
+            /*if (informationMessage[2] != null && !Objects.equals(informationMessage[2], informationMessageSentLastTime[2])) {//direction
                 if (informationMessage[2].length() > 20) {
                     controlBle.sendDirection(informationMessage[2].substring(0, 20) + "..");
                 } else {
                     controlBle.sendDirection(informationMessage[2]);
                 }
                 informationMessageSentLastTime[2] = informationMessage[2];
-            }
+            }*/
             if (informationMessage[3] != null && !Objects.equals(informationMessage[3], informationMessageSentLastTime[3])) {
-                controlBle.sendDirectionDistances(informationMessage[3]);
+                controlBle.sendDistanceToNextDir(informationMessage[3]);
                 informationMessageSentLastTime[3] = informationMessage[3];
             }
             if (informationMessage[4] != null && !Objects.equals(informationMessage[4], informationMessageSentLastTime[4])) {

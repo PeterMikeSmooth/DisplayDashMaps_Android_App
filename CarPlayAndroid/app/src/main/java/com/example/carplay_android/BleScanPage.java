@@ -1,6 +1,5 @@
 package com.example.carplay_android;
 
-import static com.example.carplay_android.utils.ScanBleDeviceUtils.scanLeDevice;
 import static com.example.carplay_android.javabeans.JavaBeanFilters.*;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -64,13 +63,13 @@ public class BleScanPage extends AppCompatActivity {
             }
         });
 
-        scanLeDevice(getApplicationContext());
+        ScanBleDeviceUtils.scanLeDevice(getApplicationContext());
 
 
         buttonScan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                scanLeDevice(getApplicationContext());
+                ScanBleDeviceUtils.scanLeDevice(getApplicationContext());
             }
         });
 
