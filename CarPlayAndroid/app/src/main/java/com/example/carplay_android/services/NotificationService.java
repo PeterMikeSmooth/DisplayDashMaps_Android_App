@@ -83,7 +83,7 @@ public class NotificationService extends NotificationListenerService {
     private String removeAccentsAndSpecialCharacters(String input) {
         return Normalizer.normalize(input, Normalizer.Form.NFD)
                 .replaceAll("[^\\p{ASCII}]", "")
-                .replaceAll("[^a-zA-Z0-9 .'\\-]", "");
+                .replaceAll("[^a-zA-Z0-9 .',\\-]", "");
     }
 
     private void handleGMapNotification(StatusBarNotification sbn) {
