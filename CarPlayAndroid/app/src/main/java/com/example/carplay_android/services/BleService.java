@@ -2,8 +2,12 @@ package com.example.carplay_android.services;
 
 import static com.example.carplay_android.javabeans.JavaBeanFilters.*;
 
+import android.app.ActivityManager;
 import android.app.Service;
+import android.app.usage.UsageStats;
+import android.app.usage.UsageStatsManager;
 import android.bluetooth.BluetoothGatt;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Handler;
@@ -19,8 +23,10 @@ import com.clj.fastble.callback.BleMtuChangedCallback;
 import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
+import com.example.carplay_android.MainActivity;
 import com.example.carplay_android.utils.BroadcastUtils;
 
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -55,7 +61,7 @@ public class BleService extends Service {
                     BleManager.getInstance().init(getApplication());
                     boolean status = false;
                     if (BleManager.getInstance().isSupportBle()) {
-                        if (!BleManager.getInstance().isBlueEnable()) {
+                        if (!BleManager.getInstance().isBlueEnable() && MainActivity.isForeground) {
                             BleManager.getInstance().enableBluetooth();
                             //check again see if BT is enabled
                             status = !BleManager.getInstance().isBlueEnable();
@@ -68,6 +74,39 @@ public class BleService extends Service {
             };
             timerBTState.schedule(timerTask, 10, 1000);
         }
+    }
+
+
+    private boolean isAppRunning(String packageName) {
+        ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> appProcesses = activityManager.getRunningAppProcesses();
+        if (appProcesses == null) {
+            return false;
+        }
+        for (ActivityManager.RunningAppProcessInfo appProcess : appProcesses) {
+            if (appProcess.processName.equals(packageName)) {
+                return true; // The app is running
+            }
+        }
+        return false; // The app is not running
+    }
+
+    private boolean isAppInForeground(String packageName) {
+        UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+        long time = System.currentTimeMillis();
+        List<UsageStats> appList = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 1000*60*60, time);
+        if (appList != null && !appList.isEmpty()) {
+            UsageStats recentStats = null;
+            for (UsageStats usageStats : appList) {
+                if (usageStats.getPackageName().equals(packageName)) {
+                    if (recentStats == null || usageStats.getLastTimeUsed() > recentStats.getLastTimeUsed()) {
+                        recentStats = usageStats;
+                    }
+                }
+            }
+            return recentStats != null && recentStats.getLastTimeUsed() > time - 1000;
+        }
+        return false;
     }
 
     public class BleBinder extends Binder {

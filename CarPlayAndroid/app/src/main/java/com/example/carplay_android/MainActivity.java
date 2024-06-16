@@ -49,8 +49,19 @@ public class MainActivity extends AppCompatActivity {
 
     private BleDevice deviceUsed;
 
+    public static boolean isForeground = false;
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isForeground = true;
+    }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isForeground = false;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
