@@ -5,6 +5,8 @@ import android.graphics.drawable.Icon;
 
 import static com.example.carplay_android.javabeans.JavaBeanFilters.*;
 
+import static java.lang.Character.toUpperCase;
+
 import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -81,9 +83,11 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private String removeAccentsAndSpecialCharacters(String input) {
-        return Normalizer.normalize(input, Normalizer.Form.NFD)
+        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
                 .replaceAll("[^\\p{ASCII}]", "")
                 .replaceAll("[^a-zA-Z0-9 .',\\-]", "");
+
+        return normalized.toUpperCase(); // Convertir en majuscules
     }
 
     private void handleGMapNotification(StatusBarNotification sbn) {
