@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -203,13 +204,13 @@ public class BleService extends Service {
 
                         @Override
                         public void onWriteFailure(BleException exception) {
-                            //Log.d("1", "Failed to send: " + exception.toString());
-                            new Handler().postDelayed(new Runnable() {
+                            // Log.d("1", "Failed to send: " + exception.toString());
+                            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
                                     sendToDevice(informationMessage, uuid);
                                 }
-                            },100);
+                            }, 100);
                         }
                     });
         }

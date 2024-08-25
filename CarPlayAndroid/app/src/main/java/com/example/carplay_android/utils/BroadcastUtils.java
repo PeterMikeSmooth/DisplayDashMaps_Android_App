@@ -32,8 +32,15 @@ public class BroadcastUtils {
             JavaBeanDevice javaBeanDevice = new JavaBeanDevice();
             if (object instanceof BleDevice) {
                 javaBeanDevice.setBleDevice((BleDevice) object);
-            } else {
-                javaBeanDevice.setBleDeviceList((List<BleDevice>) object);
+            } else if (object instanceof List) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    List<BleDevice> bleDeviceList = (List<BleDevice>) object;
+                    javaBeanDevice.setBleDeviceList(bleDeviceList);
+                } catch (ClassCastException e) {
+                    e.printStackTrace(); // ou gérer l'exception comme vous le souhaitez
+                    return; // ou une autre action pour éviter de poursuivre avec un cast incorrect
+                }
             }
             intent.putExtra(filter, javaBeanDevice);
         }
