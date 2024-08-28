@@ -168,9 +168,10 @@ public class MainActivity extends AppCompatActivity {
     private void initService(){
         serviceConnToBLE = new ServiceConnToBLE();
         Intent intent = new Intent(this, BleService.class);
-        bindService(intent, serviceConnToBLE, BIND_AUTO_CREATE);
         startService(intent);//bind the service
+        bindService(intent, serviceConnToBLE, BIND_AUTO_CREATE);
         requestIgnoreBatteryOptimizations();
+
     }
 
     class ServiceConnToBLE implements ServiceConnection {
@@ -253,11 +254,24 @@ public class MainActivity extends AppCompatActivity {
     class ReceiverForBleStatus extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getBooleanExtra(getFILTER_BLE_STATUS(),false)){
+            boolean bleStatus = intent.getBooleanExtra(getFILTER_BLE_STATUS(), false);
+            String errorMessage = intent.getStringExtra("BLE_ERROR_MESSAGE");
+
+            if (bleStatus) {
                 imageViewBleStatus.setColorFilter(Color.GREEN);
-            }else{
+                showStatusMessage("Bluetooth is connected and working properly.");
+            } else {
                 imageViewBleStatus.setColorFilter(0x9c9c9c);
+                if (errorMessage != null) {
+                    showStatusMessage("Bluetooth error: " + errorMessage);
+                } else {
+                    showStatusMessage("Bluetooth is disconnected. Unknown error.");
+                }
             }
+        }
+
+        private void showStatusMessage(String message) {
+            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
         }
     }
 

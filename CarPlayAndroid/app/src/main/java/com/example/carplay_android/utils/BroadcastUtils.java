@@ -15,6 +15,12 @@ public class BroadcastUtils {
         sendBroadcast(status, filter, context);
     }
 
+    public static void sendStatus(boolean status, String filter, Context context, String errorMessage) {
+        Intent intent = new Intent(filter);
+        intent.putExtra("status", status);
+        intent.putExtra("errorMessage", errorMessage);
+        context.sendBroadcast(intent);
+    }
     public static void sendBleDevice(BleDevice bleDevice, String filter, Context context) {
         sendBroadcast(bleDevice, filter, context);
     }
