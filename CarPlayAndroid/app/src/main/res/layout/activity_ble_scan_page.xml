@@ -30,7 +30,8 @@
         android:id="@+id/deviceList"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="9" />
+        android:layout_weight="9"
+        android:textColor="#800000" />
 
     <!-- Lower section with buttons and device information -->
     <LinearLayout
@@ -56,7 +57,7 @@
                 android:gravity="center"
                 android:text="Name"
                 android:textAlignment="center"
-                android:textColor="@android:color/white"
+                android:textColor="#800000"
                 android:textSize="16sp" />
 
             <TextView
@@ -67,7 +68,7 @@
                 android:gravity="center"
                 android:text="Address"
                 android:textAlignment="center"
-                android:textColor="@android:color/white"
+                android:textColor="#800000"
                 android:textSize="16sp" />
         </LinearLayout>
 
@@ -84,7 +85,7 @@
                 android:layout_weight="1"
                 android:gravity="center"
                 android:textAlignment="center"
-                android:textColor="@android:color/white"
+                android:textColor="#800000"
                 android:textSize="16sp" />
 
             <TextView
@@ -94,7 +95,7 @@
                 android:layout_weight="1"
                 android:gravity="center"
                 android:textAlignment="center"
-                android:textColor="@android:color/white"
+                android:textColor="#800000"
                 android:textSize="16sp" />
         </LinearLayout>
 
