@@ -83,12 +83,24 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private String removeAccentsAndSpecialCharacters(String input) {
+        // Remplacer les caractères spécifiques avant la normalisation
+        input = input.replace("ẞ", "SS")
+                .replace("ß", "SS")
+                .replace("ä", "AE")
+                .replace("Ä", "AE")
+                .replace("ö", "OE")
+                .replace("Ö", "OE")
+                .replace("ü", "UE")
+                .replace("Ü", "UE");
+
+        // Normalisation et suppression des accents et caractères spéciaux
         String normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
                 .replaceAll("[^\\p{ASCII}]", "")
                 .replaceAll("[^a-zA-Z0-9 .',\\-]", "");
 
         return normalized.toUpperCase(); // Convertir en majuscules
     }
+
 
     private void handleGMapNotification(StatusBarNotification sbn) {
         Bundle bundle = sbn.getNotification().extras;
