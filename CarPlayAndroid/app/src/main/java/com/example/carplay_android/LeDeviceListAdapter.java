@@ -2,11 +2,14 @@ package com.example.carplay_android;
 
 import android.content.Context;
 import android.graphics.Typeface;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.res.ResourcesCompat;
 
 import com.clj.fastble.data.BleDevice;
 
@@ -16,6 +19,10 @@ import java.util.List;
 public class LeDeviceListAdapter extends BaseAdapter {
     private List<BleDevice> bleDeviceLeDevices;
     private Context mContext;
+    private Typeface lunasolTypeface;
+    private int primaryTextColor;
+    private int secondaryTextColor;
+
 
     static class ViewHolder {
         TextView deviceName;
@@ -25,6 +32,13 @@ public class LeDeviceListAdapter extends BaseAdapter {
     public LeDeviceListAdapter(Context context){
         mContext = context;
         bleDeviceLeDevices = new ArrayList<>();
+        lunasolTypeface = ResourcesCompat.getFont(context, R.font.lunasol);
+
+        TypedValue typedValue = new TypedValue();
+        context.getTheme().resolveAttribute(android.R.attr.textColorPrimary, typedValue, true);
+        primaryTextColor = ContextCompat.getColor(context, typedValue.resourceId);
+        context.getTheme().resolveAttribute(android.R.attr.textColorSecondary, typedValue, true);
+        secondaryTextColor = ContextCompat.getColor(context, typedValue.resourceId);
     }
 
     public void addDeviceList(List<BleDevice> devices) {
@@ -58,7 +72,6 @@ public class LeDeviceListAdapter extends BaseAdapter {
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
         ViewHolder viewHolder;
-        // General ListView optimization code.
         if (view == null) {
             view = LayoutInflater.from(mContext).inflate(R.layout.device_information, viewGroup, false);
             viewHolder = new ViewHolder();
@@ -80,11 +93,15 @@ public class LeDeviceListAdapter extends BaseAdapter {
         viewHolder.deviceAddress.setText(device.getMac());
 
         if ("Display Dash".equals(deviceName)) {
-            viewHolder.deviceName.setTypeface(null, Typeface.BOLD);
-            viewHolder.deviceAddress.setTypeface(null, Typeface.BOLD);
+            viewHolder.deviceName.setTypeface(lunasolTypeface);
+            viewHolder.deviceName.setTextColor(ContextCompat.getColor(mContext, R.color.red));
+            viewHolder.deviceAddress.setTypeface(null, Typeface.NORMAL);
+            viewHolder.deviceAddress.setTextColor(secondaryTextColor);
         } else {
             viewHolder.deviceName.setTypeface(null, Typeface.NORMAL);
+            viewHolder.deviceName.setTextColor(primaryTextColor);
             viewHolder.deviceAddress.setTypeface(null, Typeface.NORMAL);
+            viewHolder.deviceAddress.setTextColor(secondaryTextColor);
         }
 
         return view;

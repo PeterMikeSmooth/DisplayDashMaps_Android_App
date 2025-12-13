@@ -6,6 +6,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import android.Manifest;
@@ -17,6 +19,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Typeface;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
@@ -50,7 +53,7 @@ public class BleScanPage extends AppCompatActivity {
     private TextView deviceAddress;
 
 
-    private LeDeviceListAdapter leDeviceListAdapter = new LeDeviceListAdapter(this);
+    private LeDeviceListAdapter leDeviceListAdapter;
 
     private BleService.BleBinder controlBle;
     private ServiceConnBle serviceConnBle;
@@ -58,12 +61,14 @@ public class BleScanPage extends AppCompatActivity {
     private BleDevice deviceSelected;
 
     private ReceiverForConnectionStatus receiverForConnectionStatus;
+    private Typeface lunasolTypeface;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ble_scan_page);
-        
+        lunasolTypeface = ResourcesCompat.getFont(this, R.font.lunasol);
+
         init();
 
         checkPermissionsAndScan();
@@ -78,6 +83,15 @@ public class BleScanPage extends AppCompatActivity {
                     textView = view.findViewById(R.id.nameForSingle);
                     deviceName.setText(textView.getText());
                     deviceSelected = ScanBleDeviceUtils.getResultList().get(i);
+
+                    if ("Display Dash".equals(deviceSelected.getName())) {
+                        deviceName.setTypeface(lunasolTypeface);
+                        deviceName.setTextColor(ContextCompat.getColor(BleScanPage.this, R.color.red));
+                    } else {
+                        deviceName.setTypeface(Typeface.DEFAULT_BOLD);
+                        deviceName.setTextColor(ContextCompat.getColor(BleScanPage.this, android.R.color.primary_text_light));
+                    }
+
                 }else{
                     connectDevice();
                 }
@@ -168,14 +182,15 @@ public class BleScanPage extends AppCompatActivity {
 
 
     private void init(){
+        leDeviceListAdapter = new LeDeviceListAdapter(this);
         initComponents();
         initBroadcastReceiver();
         initService();
     }
 
     private void initComponents(){
-        buttonScan = findViewById(R.id.buttonNotification);
-        buttonConnect = findViewById(R.id.buttonConnectOld);
+        buttonScan = findViewById(R.id.buttonScan);
+        buttonConnect = findViewById(R.id.buttonConnect);
         bleList = findViewById(R.id.deviceList);
         deviceAddress = findViewById(R.id.deviceAddress);
         deviceName = findViewById(R.id.deviceName);

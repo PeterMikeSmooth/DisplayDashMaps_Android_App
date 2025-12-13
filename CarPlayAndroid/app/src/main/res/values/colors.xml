@@ -7,7 +7,15 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="red">#ec4141</color>
+    <color name="red">#FF0000</color>
     <color name="gray">#9c9c9c</color>
     <color name="green">#38b25c</color>
+
+    <!-- DisplayDash new colors -->
+    <color name="dd_blue">#00AEEF</color>
+    <color name="dd_green">#A6CE39</color>
+    <color name="dd_dark_background">#121212</color>
+    <color name="dd_light_background">#FFFFFF</color>
+    <color name="dd_text_light">#FFFFFF</color>
+    <color name="dd_text_dark">#000000</color>
 </resources>
