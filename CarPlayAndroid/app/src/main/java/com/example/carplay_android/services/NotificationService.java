@@ -39,7 +39,6 @@ public class NotificationService extends NotificationListenerService {
 
     private BleService.BleBinder controlBle;
     private ServiceConnToBle serviceConnToBle;
-    private Boolean deviceStatus = false;
     private Timer timerSendNotification;
     private Boolean ifSendNotification = false;
     private static String[] informationMessageSentLastTime = new String[7];
@@ -201,7 +200,7 @@ public class NotificationService extends NotificationListenerService {
             Log.d("1", "LargeIcon is null");
         }
 
-        if (deviceStatus) {
+        if (controlBle != null && controlBle.isConnected()) {
             if (informationMessage[0] != null && !informationMessage[0].equals(informationMessageSentLastTime[0])) {
 
                     controlBle.sendNextStreet(informationMessage[0]);
@@ -242,6 +241,8 @@ public class NotificationService extends NotificationListenerService {
             //why not just check if two messages are the same,  why still need to send same message every half second:
             //because if the device lost connection before, we have to keep send message to it to keep it does not
             //receive any wrong message.
+        } else {
+             Log.d("NotificationService", "Device not connected, not sending BLE data.");
         }
 
     }
@@ -251,7 +252,6 @@ public class NotificationService extends NotificationListenerService {
         Arrays.fill(informationMessageSentLastTime, "");
 
         initService();
-        initBroadcastReceiver();
         setSendNotificationTimer();
         BroadcastUtils.sendStatus(true, getFILTER_NOTIFICATION_STATUS(), getApplicationContext());
         DirectionUtils.loadSamplesFromAsserts(getApplicationContext());
@@ -264,13 +264,6 @@ public class NotificationService extends NotificationListenerService {
         startService(intent);//bind the service
     }
 
-    private void initBroadcastReceiver() {
-        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
-        ReceiverForDeviceStatus receiverForDeviceStatus = new ReceiverForDeviceStatus();
-        IntentFilter intentFilterForDeviceStatus = new IntentFilter(getFILTER_DEVICE_STATUS());
-        localBroadcastManager.registerReceiver(receiverForDeviceStatus, intentFilterForDeviceStatus);
-    }
-
     private class ServiceConnToBle implements ServiceConnection {
         @Override
         public void onServiceConnected(ComponentName name, IBinder iBinder) {
@@ -280,13 +273,6 @@ public class NotificationService extends NotificationListenerService {
         @Override
         public void onServiceDisconnected(ComponentName name) {
             bindService(new Intent(NotificationService.this, BleService.class), serviceConnToBle, BIND_AUTO_CREATE);
-        }
-    }
-
-    private class ReceiverForDeviceStatus extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            deviceStatus = intent.getBooleanExtra(getFILTER_DEVICE_STATUS(), false);
         }
     }
 

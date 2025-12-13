@@ -1,8 +1,7 @@
 package com.example.carplay_android;
 
-import android.annotation.SuppressLint;
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,41 +12,37 @@ import com.clj.fastble.data.BleDevice;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class LeDeviceListAdapter extends BaseAdapter {
     private List<BleDevice> bleDeviceLeDevices;
-    //private List<String> bleDeviceLeDevices = new ArrayList<>();
-    private LayoutInflater layoutInflater;
     private Context mContext;
 
-    private final ExecutorService e1 = Executors.newSingleThreadScheduledExecutor();
-
-    class ViewHolder {
+    static class ViewHolder {
         TextView deviceName;
         TextView deviceAddress;
     }
 
     public LeDeviceListAdapter(Context context){
         mContext = context;
+        bleDeviceLeDevices = new ArrayList<>();
     }
 
     public void addDeviceList(List<BleDevice> devices) {
-            bleDeviceLeDevices = devices;
+        bleDeviceLeDevices = devices;
     }
 
     public void clear() {
-        bleDeviceLeDevices.clear();
+        if (bleDeviceLeDevices != null) {
+            bleDeviceLeDevices.clear();
+        }
     }
 
     @Override
     public int getCount() {
-        if(bleDeviceLeDevices != null){
+        if (bleDeviceLeDevices != null) {
             return bleDeviceLeDevices.size();
         }
         return 0;
-
     }
 
     @Override
@@ -73,10 +68,25 @@ public class LeDeviceListAdapter extends BaseAdapter {
         } else {
             viewHolder = (ViewHolder) view.getTag();
         }
-        e1.submit(()->{
-            viewHolder.deviceAddress.post(() -> viewHolder.deviceAddress.setText(bleDeviceLeDevices.get(i).getMac()));
-            viewHolder.deviceName.post(() -> viewHolder.deviceName.setText(bleDeviceLeDevices.get(i).getName()));
-        });
+
+        BleDevice device = bleDeviceLeDevices.get(i);
+        String deviceName = device.getName();
+
+        if (deviceName != null && !deviceName.isEmpty()) {
+            viewHolder.deviceName.setText(deviceName);
+        } else {
+            viewHolder.deviceName.setText("Appareil inconnu");
+        }
+        viewHolder.deviceAddress.setText(device.getMac());
+
+        if ("Display Dash".equals(deviceName)) {
+            viewHolder.deviceName.setTypeface(null, Typeface.BOLD);
+            viewHolder.deviceAddress.setTypeface(null, Typeface.BOLD);
+        } else {
+            viewHolder.deviceName.setTypeface(null, Typeface.NORMAL);
+            viewHolder.deviceAddress.setTypeface(null, Typeface.NORMAL);
+        }
+
         return view;
     }
 }
