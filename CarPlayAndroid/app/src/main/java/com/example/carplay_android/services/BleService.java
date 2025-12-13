@@ -241,6 +241,12 @@ public class BleService extends Service {
             String DIRECTION_PRECISE_UUID = "a602346d-c2bb-4782-8ea7-196a11f85113";
             sendToDevice(information, DIRECTION_PRECISE_UUID);
         }
+
+        public void requestStatusUpdate() {
+            BroadcastUtils.sendStatus(BleManager.getInstance().isBlueEnable(), getFILTER_BT_STATUS(), getApplicationContext());
+            BroadcastUtils.sendStatus(true, getFILTER_BLE_STATUS(), getApplicationContext()); // if service is running, it is ON
+            sendConnectionStatus(isConnected());
+        }
     }
 
     @Override

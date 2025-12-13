@@ -14,7 +14,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -55,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         isForeground = true;
+        checkInitialStatuses();
     }
 
     @Override
@@ -103,7 +103,6 @@ public class MainActivity extends AppCompatActivity {
     private void init(){
         askPermission();
         initComponents();
-//        isNotificationServiceRunning();
         initBroadcastReceiver();
         initService();
     }
@@ -117,26 +116,15 @@ public class MainActivity extends AppCompatActivity {
         imageViewNotificationStatus = findViewById(R.id.imageViewNotification);
         imageViewDeviceStatus = findViewById(R.id.imageViewDevice);
         deviceName = findViewById(R.id.textViewDeviceName);
-
-//        SharedPreferences sharedPreferences = getSharedPreferences(getFILTER_DEVICE_USED(), 0);
-//        String json = sharedPreferences.getString(getFILTER_DEVICE_USED(), null);
-//        if(json != null){
-//            Gson gson = new Gson();
-//            Type type = new TypeToken<JavaBeanDevice>(){}.getType();
-//            JavaBeanDevice javaBeanDevice = gson.fromJson(json, type);
-//            deviceUsed = javaBeanDevice.getBleDevice();
-//            deviceName.setText(deviceUsed.getName());
-//        }
     }
 
     private void askPermission(){
         String[] permissions = {
-                "android.permission.BLUETOOTH",
+                "android.permission.BLUETOETOOTH",
                 "android.permission.BLUETOOTH_ADMIN",
                 "android.permission.ACCESS_FINE_LOCATION",
                 "android.permission.ACCESS_COARSE_LOCATION",
         };
-        //requestIgnoreBatteryOptimizations();
         requestPermissions(permissions, 200);
     }
 
@@ -171,37 +159,41 @@ public class MainActivity extends AppCompatActivity {
         startService(intent);//bind the service
         bindService(intent, serviceConnToBLE, BIND_AUTO_CREATE);
         requestIgnoreBatteryOptimizations();
+    }
 
+    private void checkInitialStatuses() {
+        imageViewNotificationStatus.setActivated(isNotificationServiceEnabled());
+        if (controlBle != null) {
+            controlBle.requestStatusUpdate();
+        }
+    }
+
+    private boolean isNotificationServiceEnabled() {
+        String pkgName = getPackageName();
+        final String flat = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners");
+        if (flat != null && !flat.isEmpty()) {
+            final String[] names = flat.split(":");
+            for (String name : names) {
+                final ComponentName cn = ComponentName.unflattenFromString(name);
+                if (cn != null && cn.getPackageName().equals(pkgName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     class ServiceConnToBLE implements ServiceConnection {
         @Override
         public void onServiceConnected(ComponentName name, IBinder iBinder){
             controlBle = (BleService.BleBinder)iBinder;
+            checkInitialStatuses();
         }
         @Override
         public void onServiceDisconnected(ComponentName name){
             initService();
         }
     }
-
-
-//    private void ensureNotificationServiceRunning() {
-//        String enabledListeners = Settings.Secure.getString(
-//                getContentResolver(),
-//                "enabled_notification_listeners");
-//
-//        if (enabledListeners == null || !enabledListeners.contains(getPackageName())) {
-//            Intent intent = new Intent(this, NotificationService.class);
-//            startService(intent);
-//            bindService(intent, serviceConnection, BIND_AUTO_CREATE);
-//        }
-//    }
-
-
-
-
-
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     public void requestIgnoreBatteryOptimizations() {
@@ -219,35 +211,18 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-
     }
-
-
 
     class ReceiverForDeviceUsed extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
-//            JavaBeanDevice javaBeanDevice = (JavaBeanDevice) intent.getSerializableExtra(getFILTER_DEVICE_USED());
-//            deviceUsed = javaBeanDevice.getBleDevice();
-//            deviceName.setText(deviceUsed.getName());
-//            SharedPreferences sharedPreferences = getSharedPreferences(getFILTER_DEVICE_USED(), 0);
-//            SharedPreferences.Editor editor = sharedPreferences.edit();
-//            Gson gson = new Gson();
-//            String json = gson.toJson(javaBeanDevice);
-//            editor.putString(getFILTER_DEVICE_USED(), json);
-//            editor.apply();
-
         }
     }
 
     class ReceiverForBTStatus extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getBooleanExtra(getFILTER_BT_STATUS(),false)){
-                imageViewBTStatus.setColorFilter(Color.GREEN);
-            }else{
-                imageViewBTStatus.setColorFilter(0x9c9c9c);
-            }
+            imageViewBTStatus.setActivated(intent.getBooleanExtra(getFILTER_BT_STATUS(),false));
         }
     }
 
@@ -255,18 +230,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             boolean bleStatus = intent.getBooleanExtra(getFILTER_BLE_STATUS(), false);
+            imageViewBleStatus.setActivated(bleStatus);
             String errorMessage = intent.getStringExtra("BLE_ERROR_MESSAGE");
-
-            if (bleStatus) {
-                imageViewBleStatus.setColorFilter(Color.GREEN);
-                showStatusMessage("Bluetooth is connected and working properly.");
-            } else {
-                imageViewBleStatus.setColorFilter(0x9c9c9c);
-                if (errorMessage != null) {
-                    showStatusMessage("Bluetooth error: " + errorMessage);
-                } else {
-                    showStatusMessage("Bluetooth is disconnected. Unknown error.");
-                }
+            if (errorMessage != null) {
+                showStatusMessage("Bluetooth error: " + errorMessage);
             }
         }
 
@@ -278,22 +245,14 @@ public class MainActivity extends AppCompatActivity {
     class ReceiverForNotificationStatus extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getBooleanExtra(getFILTER_NOTIFICATION_STATUS(),false)){
-                imageViewNotificationStatus.setColorFilter(Color.GREEN);
-            }else{
-                imageViewNotificationStatus.setColorFilter(0x9c9c9c);
-            }
-
+            imageViewNotificationStatus.setActivated(intent.getBooleanExtra(getFILTER_NOTIFICATION_STATUS(),false));
         }
     }
+
     class ReceiverForDeviceStatus extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getBooleanExtra(getFILTER_DEVICE_STATUS(),false)){
-                imageViewDeviceStatus.setColorFilter(Color.GREEN);
-            }else{
-                imageViewDeviceStatus.setColorFilter(0x9c9c9c);
-            }
+           imageViewDeviceStatus.setActivated(intent.getBooleanExtra(getFILTER_DEVICE_STATUS(),false));
         }
     }
 
@@ -303,4 +262,3 @@ public class MainActivity extends AppCompatActivity {
         unbindService(serviceConnToBLE);
     }
 }
-
