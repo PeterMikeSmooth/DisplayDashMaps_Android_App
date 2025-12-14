@@ -1,11 +1,10 @@
 package com.example.carplay_android;
 
-import static com.example.carplay_android.javabeans.JavaBeanFilters.*;
-
-import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-
+import static com.example.carplay_android.javabeans.JavaBeanFilters.getFILTER_BLE_STATUS;
+import static com.example.carplay_android.javabeans.JavaBeanFilters.getFILTER_BT_STATUS;
+import static com.example.carplay_android.javabeans.JavaBeanFilters.getFILTER_DEVICE_STATUS;
+import static com.example.carplay_android.javabeans.JavaBeanFilters.getFILTER_DEVICE_USED;
+import static com.example.carplay_android.javabeans.JavaBeanFilters.getFILTER_NOTIFICATION_STATUS;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -20,6 +19,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.text.Html;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -27,12 +27,18 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import com.clj.fastble.data.BleDevice;
 import com.example.carplay_android.services.BleService;
-import com.example.carplay_android.services.NotificationService;
-
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "MainActivity";
+    public static final String SHARED_PREFS = "sharedPrefs";
+    public static final String LAST_DEVICE_MAC = "lastDeviceMac";
 
     private BleService.BleBinder controlBle;
     private ServiceConnToBLE serviceConnToBLE;
@@ -55,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         isForeground = true;
         checkInitialStatuses();
+        loadLastDevice();
     }
 
     @Override
@@ -79,13 +86,21 @@ public class MainActivity extends AppCompatActivity {
         buttonConnectToOld.setOnClickListener(new View.OnClickListener() {//connect to previous device
             @Override
             public void onClick(View view) {
-                if(deviceUsed == null){
+                Log.d(TAG, "Connect to previous device button clicked.");
+                SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
+                String lastDeviceMac = sharedPreferences.getString(LAST_DEVICE_MAC, null);
+
+                if (lastDeviceMac == null) {
+                    Log.w(TAG, "No previous device to connect to.");
                     CharSequence text = "No previous device";
                     int duration = Toast.LENGTH_SHORT;
                     Toast toast = Toast.makeText(getApplicationContext(), text, duration);
                     toast.show();
-                }else{
-                    controlBle.connectLeDevice(deviceUsed);
+                } else {
+                    Log.i(TAG, "Connecting to device: " + lastDeviceMac);
+                    if (controlBle != null) {
+                        controlBle.connectLeDevice(lastDeviceMac);
+                    }
                 }
             }
         });
@@ -100,15 +115,15 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void init(){
+    private void init() {
         askPermission();
         initComponents();
         initBroadcastReceiver();
         initService();
     }
 
-    private void initComponents(){
-        buttonOpenNotification  = findViewById(R.id.buttonNotification);
+    private void initComponents() {
+        buttonOpenNotification = findViewById(R.id.buttonNotification);
         buttonConnectToOld = findViewById(R.id.buttonConnectOld);
         buttonScanNewDevice = findViewById(R.id.buttonScanNew);
         imageViewBTStatus = findViewById(R.id.imageViewBT);
@@ -118,7 +133,29 @@ public class MainActivity extends AppCompatActivity {
         deviceName = findViewById(R.id.textViewDeviceName);
     }
 
-    private void askPermission(){
+    private void loadLastDevice() {
+        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
+        String lastDeviceMac = sharedPreferences.getString(LAST_DEVICE_MAC, null);
+
+        if (lastDeviceMac != null) {
+            // The service will use the MAC address string to connect.
+            String buttonText = "Connect to previous device" + "<br/><small>" + lastDeviceMac + "</small>";
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                buttonConnectToOld.setText(Html.fromHtml(buttonText, Html.FROM_HTML_MODE_LEGACY));
+            } else {
+                buttonConnectToOld.setText(Html.fromHtml(buttonText));
+            }
+            buttonConnectToOld.setEnabled(true);
+            Log.d(TAG, "Loaded last device: " + lastDeviceMac);
+        } else {
+            buttonConnectToOld.setText("Connect to previous device");
+            buttonConnectToOld.setEnabled(false);
+            Log.d(TAG, "No last device found.");
+        }
+    }
+
+
+    private void askPermission() {
         String[] permissions = {
                 "android.permission.BLUETOETOOTH",
                 "android.permission.BLUETOOTH_ADMIN",
@@ -128,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
         requestPermissions(permissions, 200);
     }
 
-    private void initBroadcastReceiver(){
+    private void initBroadcastReceiver() {
         IntentFilter intentFilter;
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
 
@@ -153,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
         localBroadcastManager.registerReceiver(receiverForDeviceStatus, intentFilter);
     }
 
-    private void initService(){
+    private void initService() {
         serviceConnToBLE = new ServiceConnToBLE();
         Intent intent = new Intent(this, BleService.class);
         startService(intent);//bind the service
@@ -185,12 +222,13 @@ public class MainActivity extends AppCompatActivity {
 
     class ServiceConnToBLE implements ServiceConnection {
         @Override
-        public void onServiceConnected(ComponentName name, IBinder iBinder){
-            controlBle = (BleService.BleBinder)iBinder;
+        public void onServiceConnected(ComponentName name, IBinder iBinder) {
+            controlBle = (BleService.BleBinder) iBinder;
             checkInitialStatuses();
         }
+
         @Override
-        public void onServiceDisconnected(ComponentName name){
+        public void onServiceDisconnected(ComponentName name) {
             initService();
         }
     }
@@ -202,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
         if (powerManager != null) {
             isIgnored = powerManager.isIgnoringBatteryOptimizations(getPackageName());
         }
-        if(!isIgnored){
+        if (!isIgnored) {
             try {
                 Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
                 intent.setData(Uri.parse("package:" + getPackageName()));
@@ -213,20 +251,29 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    class ReceiverForDeviceUsed extends BroadcastReceiver{
+    class ReceiverForDeviceUsed extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            deviceUsed = intent.getParcelableExtra(getFILTER_DEVICE_USED());
+            if (deviceUsed != null) {
+                SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString(LAST_DEVICE_MAC, deviceUsed.getMac());
+                editor.apply();
+                Log.d(TAG, "Saved last device: " + deviceUsed.getMac());
+                loadLastDevice(); // Refresh button state
+            }
         }
     }
 
-    class ReceiverForBTStatus extends BroadcastReceiver{
+    class ReceiverForBTStatus extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            imageViewBTStatus.setActivated(intent.getBooleanExtra(getFILTER_BT_STATUS(),false));
+            imageViewBTStatus.setActivated(intent.getBooleanExtra(getFILTER_BT_STATUS(), false));
         }
     }
 
-    class ReceiverForBleStatus extends BroadcastReceiver{
+    class ReceiverForBleStatus extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             boolean bleStatus = intent.getBooleanExtra(getFILTER_BLE_STATUS(), false);
@@ -242,17 +289,29 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    class ReceiverForNotificationStatus extends BroadcastReceiver{
+    class ReceiverForNotificationStatus extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            imageViewNotificationStatus.setActivated(intent.getBooleanExtra(getFILTER_NOTIFICATION_STATUS(),false));
+            imageViewNotificationStatus.setActivated(intent.getBooleanExtra(getFILTER_NOTIFICATION_STATUS(), false));
         }
     }
 
-    class ReceiverForDeviceStatus extends BroadcastReceiver{
+    class ReceiverForDeviceStatus extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-           imageViewDeviceStatus.setActivated(intent.getBooleanExtra(getFILTER_DEVICE_STATUS(),false));
+            boolean isConnected = intent.getBooleanExtra("status", false); // Correct key
+            imageViewDeviceStatus.setActivated(isConnected);
+            if (isConnected) {
+                Log.d(TAG, "Device connected. Attempting to launch Google Maps.");
+                Intent mapIntent = getPackageManager().getLaunchIntentForPackage("com.google.android.apps.maps");
+                if (mapIntent != null) {
+                    mapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(mapIntent);
+                } else {
+                    Log.e(TAG, "Could not find Google Maps launch intent.");
+                    Toast.makeText(context, "Google Maps not found.", Toast.LENGTH_SHORT).show();
+                }
+            }
         }
     }
 

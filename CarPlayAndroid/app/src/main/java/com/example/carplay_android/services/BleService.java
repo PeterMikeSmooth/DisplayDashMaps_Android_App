@@ -126,7 +126,49 @@ public class BleService extends Service {
             });
         }
 
-        public void connectLeDevice(BleDevice bleDevice) {
+        public void connectLeDevice(final BleDevice bleDevice) {
+            connect(bleDevice);
+        }
+
+        public void connectLeDevice(final String mac) {
+            BleManager.getInstance().connect(mac, new BleGattCallback() {
+                @Override
+                public void onStartConnect() {
+                    Log.d(TAG, "Starting BLE connection with MAC...");
+                }
+
+                @Override
+                public void onConnectFail(BleDevice bleDevice, BleException exception) {
+                    Log.e(TAG, "Connect with MAC failed: " + getFailureMessage(exception));
+                    sendConnectionStatus(false);
+                }
+
+                @Override
+                public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
+                    Log.d(TAG, "Connect success for device: " + bleDevice.getName());
+                    bleDeviceConnectTo = bleDevice;
+                    setMtu(bleDevice);
+                    NotificationService.cleanLastTimeSent();
+                    sendConnectionStatus(true);
+                    
+                    // Broadcast the connected device
+                    Intent intent = new Intent(getFILTER_DEVICE_USED());
+                    intent.putExtra(getFILTER_DEVICE_USED(), bleDevice);
+                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                }
+
+                @Override
+                public void onDisConnected(boolean isActiveDisConnected, BleDevice device, BluetoothGatt gatt, int status) {
+                    Log.d(TAG, "Disconnected. isActive: " + isActiveDisConnected);
+                    sendConnectionStatus(false);
+                    // Clear queue on disconnect to prevent sending stale data on reconnect
+                    writeQueue.clear();
+                    isWriting.set(false);
+                }
+            });
+        }
+
+        private void connect(BleDevice bleDevice) {
             BleManager.getInstance().connect(bleDevice, new BleGattCallback() {
                 @Override
                 public void onStartConnect() {
@@ -146,6 +188,11 @@ public class BleService extends Service {
                     setMtu(bleDevice);
                     NotificationService.cleanLastTimeSent();
                     sendConnectionStatus(true);
+
+                    // Broadcast the connected device
+                    Intent intent = new Intent(getFILTER_DEVICE_USED());
+                    intent.putExtra(getFILTER_DEVICE_USED(), bleDevice);
+                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
                 }
 
                 @Override
