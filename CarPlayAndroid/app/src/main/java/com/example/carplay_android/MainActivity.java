@@ -51,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView imageViewNotificationStatus;
     private ImageView imageViewDeviceStatus;
     private TextView deviceName;
+    private TextView textViewNotificationAccess;
 
     private BleDevice deviceUsed;
 
@@ -131,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
         imageViewNotificationStatus = findViewById(R.id.imageViewNotification);
         imageViewDeviceStatus = findViewById(R.id.imageViewDevice);
         deviceName = findViewById(R.id.textViewDeviceName);
+        textViewNotificationAccess = findViewById(R.id.textViewNotificationAccess);
     }
 
     private void loadLastDevice() {
@@ -199,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkInitialStatuses() {
-        imageViewNotificationStatus.setActivated(isNotificationServiceEnabled());
+        updateUIWithNotificationStatus(isNotificationServiceEnabled());
         if (controlBle != null) {
             controlBle.requestStatusUpdate();
         }
@@ -218,6 +220,19 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return false;
+    }
+
+    private void updateUIWithNotificationStatus(boolean hasNotificationAccess) {
+        imageViewNotificationStatus.setActivated(hasNotificationAccess);
+        if (hasNotificationAccess) {
+            buttonScanNewDevice.setEnabled(true);
+            buttonConnectToOld.setEnabled(true);
+            textViewNotificationAccess.setVisibility(View.GONE);
+        } else {
+            buttonScanNewDevice.setEnabled(false);
+            buttonConnectToOld.setEnabled(false);
+            textViewNotificationAccess.setVisibility(View.VISIBLE);
+        }
     }
 
     class ServiceConnToBLE implements ServiceConnection {
@@ -292,7 +307,7 @@ public class MainActivity extends AppCompatActivity {
     class ReceiverForNotificationStatus extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            imageViewNotificationStatus.setActivated(intent.getBooleanExtra(getFILTER_NOTIFICATION_STATUS(), false));
+            updateUIWithNotificationStatus(intent.getBooleanExtra(getFILTER_NOTIFICATION_STATUS(), false));
         }
     }
 
