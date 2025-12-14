@@ -297,13 +297,27 @@ public class BleService extends Service {
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Log.d(TAG, "Service onDestroy called");
+    public void onTaskRemoved(Intent rootIntent) {
+        Log.d(TAG, "onTaskRemoved called");
+        BleManager.getInstance().disconnectAllDevice();
+        BleManager.getInstance().destroy();
         if (timerBTState != null) {
             timerBTState.cancel();
             timerBTState = null;
         }
-        writeQueue.clear();
+        stopSelf();
+        super.onTaskRemoved(rootIntent);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "Service onDestroy called");
+        BleManager.getInstance().disconnectAllDevice();
+        if (timerBTState != null) {
+            timerBTState.cancel();
+            timerBTState = null;
+        }
+        BleManager.getInstance().destroy();
     }
 }
