@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
         isForeground = true;
         checkInitialStatuses();
         loadLastDevice();
+        checkBatteryOptimizations();
     }
 
     @Override
@@ -262,6 +263,15 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             } catch (Exception e) {
                 e.printStackTrace();
+            }
+        }
+    }
+
+    private void checkBatteryOptimizations() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(getPackageName())) {
+                Toast.makeText(this, "Battery optimizations are active. This may limit app functionality. Please disable them in the settings.", Toast.LENGTH_LONG).show();
             }
         }
     }

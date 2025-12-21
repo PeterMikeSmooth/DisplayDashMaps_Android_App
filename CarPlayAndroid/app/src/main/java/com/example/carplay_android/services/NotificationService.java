@@ -20,6 +20,7 @@ import android.os.IBinder;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -58,8 +59,14 @@ public class NotificationService extends NotificationListenerService {
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         super.onNotificationPosted(sbn);
-        if (sbn != null && isGMapNotification(sbn)) {
-            handleGMapNotification(sbn);
+        if (sbn != null && sbn.getPackageName().contains("com.google.android.apps.maps")) {
+            if (isGMapNotification(sbn)) {
+                handleGMapNotification(sbn);
+            } else {
+                String reason = "isOngoing: " + sbn.isOngoing() + ", id: " + sbn.getId();
+                Log.w("NotificationService", "Not a valid GMap notification: " + reason);
+                Toast.makeText(getApplicationContext(), "Not a valid GMap notification: " + reason, Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -241,8 +248,10 @@ public class NotificationService extends NotificationListenerService {
             //why not just check if two messages are the same,  why still need to send same message every half second:
             //because if the device lost connection before, we have to keep send message to it to keep it does not
             //receive any wrong message.
+            //Toast.makeText(getApplicationContext(), "GMap notification sent via BLE", Toast.LENGTH_SHORT).show();
         } else {
              Log.d("NotificationService", "Device not connected, not sending BLE data.");
+             Toast.makeText(getApplicationContext(), "GMap notification caught, but BLE device not connected.", Toast.LENGTH_LONG).show();
         }
 
     }
