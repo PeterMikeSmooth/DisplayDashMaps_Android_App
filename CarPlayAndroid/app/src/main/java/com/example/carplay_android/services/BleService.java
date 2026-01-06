@@ -27,6 +27,8 @@ import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
+import android.os.Handler;
+import android.os.Looper;
 
 public class BleService extends Service {
 
@@ -35,6 +37,11 @@ public class BleService extends Service {
     private BleDevice bleDeviceConnectTo;
     private final Queue<Runnable> writeQueue = new LinkedList<>();
     private final AtomicBoolean isWriting = new AtomicBoolean(false);
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private volatile boolean servicesDiscovered = false;
+    private static final int XIAOMI_CONNECTION_DELAY_MS = 1500; // Délai pour Xiaomi
+    private static final int MAX_WRITE_RETRIES = 2;
+    private static final int WRITE_RETRY_DELAY_MS = 200;
 
     @Nullable
     @Override
@@ -147,19 +154,43 @@ public class BleService extends Service {
                 public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
                     Log.d(TAG, "Connect success for device: " + bleDevice.getName());
                     bleDeviceConnectTo = bleDevice;
-                    setMtu(bleDevice);
-                    NotificationService.cleanLastTimeSent();
-                    sendConnectionStatus(true);
                     
-                    // Broadcast the connected device
-                    Intent intent = new Intent(getFILTER_DEVICE_USED());
-                    intent.putExtra(getFILTER_DEVICE_USED(), bleDevice);
-                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                    // Découvrir explicitement les services (critique pour Xiaomi)
+                    if (gatt != null) {
+                        Log.d(TAG, "Starting service discovery...");
+                        boolean discoveryStarted = gatt.discoverServices();
+                        Log.d(TAG, "Service discovery started: " + discoveryStarted);
+                        
+                        // Délai de stabilisation spécifique pour Xiaomi et autres appareils Android 12+
+                        mainHandler.postDelayed(() -> {
+                            servicesDiscovered = true;
+                            Log.d(TAG, "Services marked as discovered after delay");
+                            setMtu(bleDevice);
+                            NotificationService.cleanLastTimeSent();
+                            sendConnectionStatus(true);
+                            
+                            // Broadcast the connected device
+                            Intent intent = new Intent(getFILTER_DEVICE_USED());
+                            intent.putExtra(getFILTER_DEVICE_USED(), bleDevice);
+                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                        }, XIAOMI_CONNECTION_DELAY_MS);
+                    } else {
+                        // Fallback si gatt est null
+                        servicesDiscovered = true;
+                        setMtu(bleDevice);
+                        NotificationService.cleanLastTimeSent();
+                        sendConnectionStatus(true);
+                        
+                        Intent intent = new Intent(getFILTER_DEVICE_USED());
+                        intent.putExtra(getFILTER_DEVICE_USED(), bleDevice);
+                        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                    }
                 }
 
                 @Override
                 public void onDisConnected(boolean isActiveDisConnected, BleDevice device, BluetoothGatt gatt, int status) {
                     Log.d(TAG, "Disconnected. isActive: " + isActiveDisConnected);
+                    servicesDiscovered = false; // Reset flag
                     sendConnectionStatus(false);
                     // Clear queue on disconnect to prevent sending stale data on reconnect
                     writeQueue.clear();
@@ -185,19 +216,43 @@ public class BleService extends Service {
                 public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
                     Log.d(TAG, "Connect success for device: " + bleDevice.getName());
                     bleDeviceConnectTo = bleDevice;
-                    setMtu(bleDevice);
-                    NotificationService.cleanLastTimeSent();
-                    sendConnectionStatus(true);
-
-                    // Broadcast the connected device
-                    Intent intent = new Intent(getFILTER_DEVICE_USED());
-                    intent.putExtra(getFILTER_DEVICE_USED(), bleDevice);
-                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                    
+                    // Découvrir explicitement les services (critique pour Xiaomi)
+                    if (gatt != null) {
+                        Log.d(TAG, "Starting service discovery...");
+                        boolean discoveryStarted = gatt.discoverServices();
+                        Log.d(TAG, "Service discovery started: " + discoveryStarted);
+                        
+                        // Délai de stabilisation spécifique pour Xiaomi et autres appareils Android 12+
+                        mainHandler.postDelayed(() -> {
+                            servicesDiscovered = true;
+                            Log.d(TAG, "Services marked as discovered after delay");
+                            setMtu(bleDevice);
+                            NotificationService.cleanLastTimeSent();
+                            sendConnectionStatus(true);
+                            
+                            // Broadcast the connected device
+                            Intent intent = new Intent(getFILTER_DEVICE_USED());
+                            intent.putExtra(getFILTER_DEVICE_USED(), bleDevice);
+                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                        }, XIAOMI_CONNECTION_DELAY_MS);
+                    } else {
+                        // Fallback si gatt est null
+                        servicesDiscovered = true;
+                        setMtu(bleDevice);
+                        NotificationService.cleanLastTimeSent();
+                        sendConnectionStatus(true);
+                        
+                        Intent intent = new Intent(getFILTER_DEVICE_USED());
+                        intent.putExtra(getFILTER_DEVICE_USED(), bleDevice);
+                        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                    }
                 }
 
                 @Override
                 public void onDisConnected(boolean isActiveDisConnected, BleDevice device, BluetoothGatt gatt, int status) {
                     Log.d(TAG, "Disconnected. isActive: " + isActiveDisConnected);
+                    servicesDiscovered = false; // Reset flag
                     sendConnectionStatus(false);
                     // Clear queue on disconnect to prevent sending stale data on reconnect
                     writeQueue.clear();
@@ -217,12 +272,20 @@ public class BleService extends Service {
         }
 
         public void sendToDevice(String informationMessage, String uuid) {
-            Log.d(TAG, "Queueing write op for UUID " + uuid + ". Queue size: " + writeQueue.size());
+            sendToDeviceWithRetry(informationMessage, uuid, 0);
+        }
+
+        private void sendToDeviceWithRetry(String informationMessage, String uuid, int retryCount) {
+            Log.d(TAG, "Queueing write op for UUID " + uuid + ". Queue size: " + writeQueue.size() + ", retry: " + retryCount);
             writeQueue.add(() -> {
                 if (!isConnected()) {
                     Log.e(TAG, "Device not connected, skipping write for UUID " + uuid);
                     isWriting.set(false);
-                    // Don't process queue here, just stop this failed operation.
+                    return;
+                }
+                if (!servicesDiscovered) {
+                    Log.w(TAG, "Services not yet discovered, skipping write for UUID " + uuid);
+                    isWriting.set(false);
                     return;
                 }
                 Log.d(TAG, "Executing write for UUID: " + uuid + " message: " + informationMessage);
@@ -250,9 +313,20 @@ public class BleService extends Service {
                             @Override
                             public void onWriteFailure(BleException exception) {
                                 Log.e(TAG, "onWriteFailure for UUID: " + uuid + " - " + getFailureMessage(exception));
-                                Log.d(TAG, "Unblocking queue after failure.");
-                                isWriting.set(false);
-                                processWriteQueue();
+                                
+                                if (retryCount < MAX_WRITE_RETRIES) {
+                                    Log.d(TAG, "Retrying write for UUID: " + uuid + " (attempt " + (retryCount + 1) + "/" + MAX_WRITE_RETRIES + ")");
+                                    isWriting.set(false);
+                                    
+                                    // Retry after a short delay
+                                    mainHandler.postDelayed(() -> {
+                                        sendToDeviceWithRetry(informationMessage, uuid, retryCount + 1);
+                                    }, WRITE_RETRY_DELAY_MS);
+                                } else {
+                                    Log.e(TAG, "Max retries reached for UUID: " + uuid + ". Giving up.");
+                                    isWriting.set(false);
+                                    processWriteQueue();
+                                }
                             }
                         });
             });
