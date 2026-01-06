@@ -55,7 +55,7 @@ public class BleScanPage extends AppCompatActivity {
     private ListView bleList;
     private TextView deviceName;
     private TextView deviceAddress;
-
+    private TextView textViewConnectionStatus;
 
     private LeDeviceListAdapter leDeviceListAdapter;
 
@@ -210,6 +210,7 @@ public class BleScanPage extends AppCompatActivity {
         bleList = findViewById(R.id.deviceList);
         deviceAddress = findViewById(R.id.deviceAddress);
         deviceName = findViewById(R.id.deviceName);
+        textViewConnectionStatus = findViewById(R.id.textViewConnectionStatus);
     }
 
     private void initBroadcastReceiver(){
@@ -236,6 +237,9 @@ public class BleScanPage extends AppCompatActivity {
             Toast.makeText(getApplicationContext(), "No device selected", Toast.LENGTH_SHORT).show();
         }else{
             Log.d(TAG, "Attempting to connect to device: " + deviceSelected.getMac());
+            textViewConnectionStatus.setVisibility(View.VISIBLE);
+            buttonConnect.setEnabled(false);
+            buttonScan.setEnabled(false);
             controlBle.connectLeDevice(deviceSelected);
         }
     }
@@ -265,8 +269,12 @@ public class BleScanPage extends AppCompatActivity {
             boolean isConnected = intent.getBooleanExtra("status", false);
             Log.d(TAG, "isConnected: " + isConnected);
 
+            // Hide connection status and re-enable buttons
+            textViewConnectionStatus.setVisibility(View.GONE);
+            buttonConnect.setEnabled(true);
+            buttonScan.setEnabled(true);
+
             if (isConnected) {
-                Toast.makeText(BleScanPage.this, "Connected", Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "Attempting to launch Google Maps.");
                 Intent mapIntent = getPackageManager().getLaunchIntentForPackage("com.google.android.apps.maps");
                 if (mapIntent != null) {

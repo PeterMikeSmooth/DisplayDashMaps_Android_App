@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView imageViewDeviceStatus;
     private TextView deviceName;
     private TextView textViewNotificationAccess;
+    private TextView textViewConnectionStatus;
 
     private BleDevice deviceUsed;
 
@@ -117,6 +118,9 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     Log.i(TAG, "Connecting to device: " + lastDeviceMac);
                     if (controlBle != null) {
+                        textViewConnectionStatus.setVisibility(View.VISIBLE);
+                        buttonConnectToOld.setEnabled(false);
+                        buttonScanNewDevice.setEnabled(false);
                         controlBle.connectLeDevice(lastDeviceMac);
                     }
                 }
@@ -150,6 +154,7 @@ public class MainActivity extends AppCompatActivity {
         imageViewDeviceStatus = findViewById(R.id.imageViewDevice);
         deviceName = findViewById(R.id.textViewDeviceName);
         textViewNotificationAccess = findViewById(R.id.textViewNotificationAccess);
+        textViewConnectionStatus = findViewById(R.id.textViewConnectionStatus);
     }
 
     private void loadLastDevice() {
@@ -294,7 +299,9 @@ public class MainActivity extends AppCompatActivity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 deviceUsed = intent.getParcelableExtra(getFILTER_DEVICE_USED(), BleDevice.class);
             } else {
-                deviceUsed = intent.getParcelableExtra(getFILTER_DEVICE_USED());
+                @SuppressWarnings("deprecation")
+                BleDevice device = intent.getParcelableExtra(getFILTER_DEVICE_USED());
+                deviceUsed = device;
             }
             if (deviceUsed != null) {
                 SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
@@ -321,6 +328,10 @@ public class MainActivity extends AppCompatActivity {
             imageViewBleStatus.setActivated(bleStatus);
             String errorMessage = intent.getStringExtra("BLE_ERROR_MESSAGE");
             if (errorMessage != null) {
+                // Hide connection status and re-enable buttons on error
+                textViewConnectionStatus.setVisibility(View.GONE);
+                buttonConnectToOld.setEnabled(true);
+                buttonScanNewDevice.setEnabled(true);
                 showStatusMessage("Bluetooth error: " + errorMessage);
             }
         }
@@ -342,6 +353,12 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             boolean isConnected = intent.getBooleanExtra("status", false); // Correct key
             imageViewDeviceStatus.setActivated(isConnected);
+            
+            // Hide connection status and re-enable buttons
+            textViewConnectionStatus.setVisibility(View.GONE);
+            buttonConnectToOld.setEnabled(true);
+            buttonScanNewDevice.setEnabled(true);
+            
             if (isConnected) {
                 Log.d(TAG, "Device connected. Attempting to launch Google Maps.");
                 Intent mapIntent = getPackageManager().getLaunchIntentForPackage("com.google.android.apps.maps");

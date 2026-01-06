@@ -273,10 +273,16 @@ public class NotificationService extends NotificationListenerService {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE);
         } else {
-            stopForeground(true);
+            // Suppress deprecation warning for older Android versions
+            stopForegroundCompat();
         }
         Log.d("NotificationService", "onDestroy");
         BroadcastUtils.sendStatus(false, getFILTER_NOTIFICATION_STATUS(), getApplicationContext());
         unbindService(serviceConnToBle);
+    }
+
+    @SuppressWarnings("deprecation")
+    private void stopForegroundCompat() {
+        stopForeground(true);
     }
 }

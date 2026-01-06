@@ -48,7 +48,6 @@ public class ScanBleDeviceUtils {
                         BroadcastUtils.sendBleDevices(new ArrayList<>(resultList), "DeviceList", context);
                     }
                     Log.d(TAG, "onScanStarted: Scan started successfully.");
-                    Toast.makeText(context, "Scan en cours...", Toast.LENGTH_SHORT).show();
                 } else {
                     Log.e(TAG, "onScanStarted: Failed to start scan.");
                     Toast.makeText(context, "Erreur au démarrage du scan", Toast.LENGTH_SHORT).show();
