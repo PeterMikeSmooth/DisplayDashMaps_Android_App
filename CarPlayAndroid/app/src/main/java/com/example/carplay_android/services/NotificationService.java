@@ -44,8 +44,6 @@ public class NotificationService extends NotificationListenerService {
     private BleService.BleBinder controlBle;
     private ServiceConnToBle serviceConnToBle;
     private static String[] informationMessageSentLastTime = new String[7];
-    private static final String CHANNEL_ID = "NotificationServiceChannel";
-    private static final int FOREGROUND_NOTIFICATION_ID = 1;
 
     public NotificationService() {
 
@@ -54,43 +52,7 @@ public class NotificationService extends NotificationListenerService {
     @Override
     public void onCreate() {
         super.onCreate();
-        startAsForegroundService();
         init();
-    }
-
-    private void startAsForegroundService() {
-        createNotificationChannel();
-
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this,
-                0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
-
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("DisplayDashMaps is Active")
-                .setContentText("Listening for Google Maps notifications")
-                .setSmallIcon(R.drawable.logo_d) // Using your app icon
-                .setContentIntent(pendingIntent)
-                .build();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(FOREGROUND_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-        } else {
-            startForeground(FOREGROUND_NOTIFICATION_ID, notification);
-        }
-    }
-
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel serviceChannel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "DisplayDashMaps Active Channel",
-                    NotificationManager.IMPORTANCE_LOW // Low importance to be less intrusive
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(serviceChannel);
-            }
-        }
     }
 
     @Override
@@ -270,19 +232,8 @@ public class NotificationService extends NotificationListenerService {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(STOP_FOREGROUND_REMOVE);
-        } else {
-            // Suppress deprecation warning for older Android versions
-            stopForegroundCompat();
-        }
         Log.d("NotificationService", "onDestroy");
         BroadcastUtils.sendStatus(false, getFILTER_NOTIFICATION_STATUS(), getApplicationContext());
         unbindService(serviceConnToBle);
-    }
-
-    @SuppressWarnings("deprecation")
-    private void stopForegroundCompat() {
-        stopForeground(true);
     }
 }
