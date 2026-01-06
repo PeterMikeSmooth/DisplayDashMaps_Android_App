@@ -8,6 +8,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import android.Manifest;
@@ -66,7 +70,19 @@ public class BleScanPage extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // Enable edge-to-edge display
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        
         setContentView(R.layout.activity_ble_scan_page);
+        
+        // Handle window insets for edge-to-edge
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
+        
         lunasolTypeface = ResourcesCompat.getFont(this, R.font.lunasol);
 
         init();
@@ -89,7 +105,7 @@ public class BleScanPage extends AppCompatActivity {
                         deviceName.setTextColor(ContextCompat.getColor(BleScanPage.this, R.color.red));
                     } else {
                         deviceName.setTypeface(Typeface.DEFAULT_BOLD);
-                        deviceName.setTextColor(ContextCompat.getColor(BleScanPage.this, android.R.color.primary_text_light));
+                        deviceName.setTextColor(ContextCompat.getColor(BleScanPage.this, R.color.dd_text_dark));
                     }
 
                 }else{

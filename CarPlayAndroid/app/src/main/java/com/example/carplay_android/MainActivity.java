@@ -29,6 +29,10 @@ import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.clj.fastble.data.BleDevice;
@@ -75,7 +79,19 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // Enable edge-to-edge display
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        
         setContentView(R.layout.activity_main);
+        
+        // Handle window insets for edge-to-edge
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
+        
         init();
 
         buttonOpenNotification.setOnClickListener(new View.OnClickListener() {
@@ -143,11 +159,7 @@ public class MainActivity extends AppCompatActivity {
         if (lastDeviceMac != null) {
             // The service will use the MAC address string to connect.
             String buttonText = "Connect to previous device" + "<br/><small>" + lastDeviceMac + "</small>";
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                buttonConnectToOld.setText(Html.fromHtml(buttonText, Html.FROM_HTML_MODE_LEGACY));
-            } else {
-                buttonConnectToOld.setText(Html.fromHtml(buttonText));
-            }
+            buttonConnectToOld.setText(Html.fromHtml(buttonText, Html.FROM_HTML_MODE_LEGACY));
             buttonConnectToOld.setEnabled(true);
             Log.d(TAG, "Loaded last device: " + lastDeviceMac);
         } else {
@@ -279,7 +291,11 @@ public class MainActivity extends AppCompatActivity {
     class ReceiverForDeviceUsed extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            deviceUsed = intent.getParcelableExtra(getFILTER_DEVICE_USED());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                deviceUsed = intent.getParcelableExtra(getFILTER_DEVICE_USED(), BleDevice.class);
+            } else {
+                deviceUsed = intent.getParcelableExtra(getFILTER_DEVICE_USED());
+            }
             if (deviceUsed != null) {
                 SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPreferences.edit();

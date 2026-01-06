@@ -15,6 +15,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ServiceInfo;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -71,7 +72,11 @@ public class NotificationService extends NotificationListenerService {
                 .setContentIntent(pendingIntent)
                 .build();
 
-        startForeground(FOREGROUND_NOTIFICATION_ID, notification);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(FOREGROUND_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        } else {
+            startForeground(FOREGROUND_NOTIFICATION_ID, notification);
+        }
     }
 
     private void createNotificationChannel() {
@@ -135,12 +140,14 @@ public class NotificationService extends NotificationListenerService {
         String[] strings;
         String string = null;
 
-        Object value = bundle.get(Notification.EXTRA_TEXT);
+        Object value = bundle.getCharSequence(Notification.EXTRA_TEXT);
 
         if (value instanceof SpannableString) {
             string = ((SpannableString) value).toString();
         } else if (value instanceof String) {
             string = (String) value;
+        } else if (value != null) {
+            string = value.toString();
         }
         if (string != null) {
             strings = string.split("-");
@@ -149,7 +156,7 @@ public class NotificationService extends NotificationListenerService {
             isDataExtracted = true;
         }
 
-        value = bundle.get(Notification.EXTRA_TITLE);
+        value = bundle.getCharSequence(Notification.EXTRA_TITLE);
 
         if (value instanceof SpannableString) {
             string = ((SpannableString) value).toString();
@@ -263,7 +270,11 @@ public class NotificationService extends NotificationListenerService {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        stopForeground(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+        } else {
+            stopForeground(true);
+        }
         Log.d("NotificationService", "onDestroy");
         BroadcastUtils.sendStatus(false, getFILTER_NOTIFICATION_STATUS(), getApplicationContext());
         unbindService(serviceConnToBle);
