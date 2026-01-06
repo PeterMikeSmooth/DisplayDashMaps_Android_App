@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView textViewConnectionStatus;
 
     private BleDevice deviceUsed;
+    private boolean userRequestedConnection = false;
 
     public static boolean isForeground = false;
 
@@ -66,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         isForeground = true;
+        userRequestedConnection = false; // Reset flag when app comes to foreground
         checkInitialStatuses();
         loadLastDevice();
         checkBatteryOptimizations();
@@ -118,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     Log.i(TAG, "Connecting to device: " + lastDeviceMac);
                     if (controlBle != null) {
+                        userRequestedConnection = true;
                         textViewConnectionStatus.setVisibility(View.VISIBLE);
                         buttonConnectToOld.setEnabled(false);
                         buttonScanNewDevice.setEnabled(false);
@@ -359,8 +362,10 @@ public class MainActivity extends AppCompatActivity {
             buttonConnectToOld.setEnabled(true);
             buttonScanNewDevice.setEnabled(true);
             
-            if (isConnected) {
+            // Only launch Google Maps if user explicitly requested connection
+            if (isConnected && userRequestedConnection) {
                 Log.d(TAG, "Device connected. Attempting to launch Google Maps.");
+                userRequestedConnection = false; // Reset flag after launching
                 Intent mapIntent = getPackageManager().getLaunchIntentForPackage("com.google.android.apps.maps");
                 if (mapIntent != null) {
                     mapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
